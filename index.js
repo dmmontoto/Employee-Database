@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
-// const { getMenuOptions } = require('./queries');
+const { viewAllEmployees } = require('./db/queries');
 
 // Create a connection to the MySQL database
 const connection = mysql.createConnection({
@@ -41,7 +41,15 @@ function startApp() {
       .then((answers) => {
         switch (answers.menuChoice) {
           case 'View All Employees':
-            // Call the function to view all employees
+            connection.query('SELECT * FROM employee', function (err, results) {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+              
+                console.table(results); 
+                startApp();
+              });
             break;
           case 'Add Employee':
             // Call the function to add an employee
@@ -69,3 +77,7 @@ function startApp() {
         }
       });
   }
+
+module.exports = {
+    connection,
+};
