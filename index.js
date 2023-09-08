@@ -67,7 +67,7 @@ function startApp() {
             // Call the function to view all departments
             break;
           case 'Add Department':
-            // Call the function to add a department
+            addDepartment();
             break;
           case 'Quit':
             console.log('Ending session.');
@@ -77,6 +77,47 @@ function startApp() {
         }
       });
   }
+
+function addDepartment() {
+    inquirer
+    .prompt([
+        {
+            type: 'input',
+            name: 'department',
+            message: 'What is the name of the department?'
+        },
+    ])
+    .then((answers) => {
+        const departmentName = answers.department;
+
+        // Check if the department already exists
+        const checkQuery = 'SELECT * FROM department WHERE department_name = ?';
+
+        connection.query(checkQuery, [departmentName], (err, results) => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            if (results.length > 0) {
+                console.log(`Department "${departmentName}" already exists.`);
+                startApp();
+            } else {
+                // Department doesn't exist, add it to the database
+                const addQuery = 'INSERT INTO department (department_name) VALUES (?)';
+
+                connection.query(addQuery, [departmentName], (err) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    console.log(`Department "${departmentName}" added successfully.`);
+                    startApp();
+                });
+            }
+        });
+    });
+}
 
 module.exports = {
     connection,
