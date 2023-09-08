@@ -52,13 +52,21 @@ function startApp() {
               });
             break;
           case 'Add Employee':
-            // Call the function to add an employee
+            addEmployee();
             break;
           case 'Update Employee Role':
-            // Call the function to update an employee's role
+            updateEmployee();
             break;
           case 'View All Roles':
-            // Call the function to view all roles
+            connection.query('SELECT * FROM roles', function (err, results) {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+              
+                console.table(results); 
+                startApp();
+              });
             break;
           case 'Add Role':
             addRole();
@@ -86,28 +94,97 @@ function startApp() {
       });
   }
 
-function addRole() {
+  function addEmployee() {
     inquirer
     .prompt([
         {
             type: 'input',
-            name: 'role',
-            message: 'What is the name of the role?'
+            name: 'firstName',
+            message: 'What is the employee`s first name?'
         },
         {
             type: 'input',
-            name: 'salary',
-            message: 'What is the salary of the role?'
+            name: 'lastName',
+            message: 'What is the employee`s last name?'
         },
         {
             type: 'list',
-            name: 'departmentChoice',
-            message: 'Which department does the role belong to?',
-            choices: [
-
-            ],
-          },
+            name: 'roleChoice',
+            message: 'What is the employee`s role?',
+            choices: , 
+        },
+        {
+            type: 'list',
+            name: 'managerChoice',
+            message: 'Who is the employee`s manager?',
+            choices: , 
+        },
     ])
+  }
+
+  function addRole() {
+    // Fetch department names from the database
+    const departmentQuery = 'SELECT department_name FROM department';
+
+    connection.query(departmentQuery, (err, results) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        const departmentChoices = results.map((result) => result.department_name);
+
+        inquirer
+            .prompt([
+                {
+                    type: 'input',
+                    name: 'role',
+                    message: 'What is the name of the role?'
+                },
+                {
+                    type: 'input',
+                    name: 'salary',
+                    message: 'What is the salary of the role?'
+                },
+                {
+                    type: 'list',
+                    name: 'departmentChoice',
+                    message: 'Which department does the role belong to?',
+                    choices: departmentChoices, 
+                },
+            ])
+            .then((answers) => {
+                const roleName = answers.role;
+                const roleSalary = parseFloat(answers.salary);
+                const departmentName = answers.departmentChoice;
+
+                // Check if the role already exists in the chosen department
+                const checkRoleQuery = 'SELECT * FROM roles WHERE title = ? AND department_id = (SELECT id FROM department WHERE department_name = ?)';
+                
+                connection.query(checkRoleQuery, [roleName, departmentName], (err, results) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+
+                    if (results.length > 0) {
+                        console.log(`Role "${roleName}" already exists in the department "${departmentName}".`);
+                    } else {
+                        // Role doesn't exist, add it to the database
+                        const addRoleQuery = 'INSERT INTO roles (title, salary, department_id) VALUES (?, ?, (SELECT id FROM department WHERE department_name = ?))';
+
+                        connection.query(addRoleQuery, [roleName, roleSalary, departmentName], (err) => {
+                            if (err) {
+                                console.error(err);
+                                return;
+                            }
+
+                            console.log(`Role "${roleName}" added successfully to the department "${departmentName}".`);
+                        });
+                    }
+                    startApp();
+                });
+            });
+    });
 }
 
 function addDepartment() {
@@ -133,7 +210,6 @@ function addDepartment() {
 
             if (results.length > 0) {
                 console.log(`Department "${departmentName}" already exists.`);
-                startApp();
             } else {
                 // Department doesn't exist, add it to the database
                 const addQuery = 'INSERT INTO department (department_name) VALUES (?)';
@@ -144,9 +220,9 @@ function addDepartment() {
                         return;
                     }
                     console.log(`Department "${departmentName}" added successfully.`);
-                    startApp();
                 });
             }
+            startApp();
         });
     });
 }
