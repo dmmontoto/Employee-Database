@@ -61,10 +61,18 @@ function startApp() {
             // Call the function to view all roles
             break;
           case 'Add Role':
-            // Call the function to add a role
+            addRole();
             break;
           case 'View All Departments':
-            // Call the function to view all departments
+            connection.query('SELECT * FROM department', function (err, results) {
+                if (err) {
+                  console.error(err);
+                  return;
+                }
+              
+                console.table(results); 
+                startApp();
+              });
             break;
           case 'Add Department':
             addDepartment();
@@ -77,6 +85,30 @@ function startApp() {
         }
       });
   }
+
+function addRole() {
+    inquirer
+    .prompt([
+        {
+            type: 'input',
+            name: 'role',
+            message: 'What is the name of the role?'
+        },
+        {
+            type: 'input',
+            name: 'salary',
+            message: 'What is the salary of the role?'
+        },
+        {
+            type: 'list',
+            name: 'departmentChoice',
+            message: 'Which department does the role belong to?',
+            choices: [
+
+            ],
+          },
+    ])
+}
 
 function addDepartment() {
     inquirer
