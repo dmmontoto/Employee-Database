@@ -2,7 +2,6 @@ require('dotenv').config();
 
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
-// const { viewAllEmployees } = require('./db/queries');
 
 // Create a connection to the MySQL database
 const connection = mysql.createConnection({
@@ -187,6 +186,73 @@ function startApp() {
     });
 }
 
+function updateEmployee() {
+    // Fetch all employees and roles from the database
+    const employeesQuery = 'SELECT id, first_name, last_name FROM employee';
+    const rolesQuery = 'SELECT id, title FROM roles';
+
+    connection.query(employeesQuery, (err, employeesResults) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        const employeeChoices = employeesResults.map((result) => `${result.first_name} ${result.last_name}`);
+
+        connection.query(rolesQuery, (err, rolesResults) => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            const roleChoices = rolesResults.map((result) => result.title);
+
+            inquirer
+                .prompt([
+                    {
+                        type: 'list',
+                        name: 'employeeChoice',
+                        message: 'Which employee would you like to update?',
+                        choices: employeeChoices,
+                    },
+                    {
+                        type: 'list',
+                        name: 'newRole',
+                        message: 'Select the new role for the employee:',
+                        choices: roleChoices,
+                    },
+                ])
+                .then((answers) => {
+                    const employeeFullName = answers.employeeChoice;
+                    const [firstName, lastName] = employeeFullName.split(' ');
+
+                    const newRoleName = answers.newRole;
+
+                    // Find the corresponding role_id based on the selected role name
+                    const newRole = rolesResults.find((role) => role.title === newRoleName);
+
+                    if (!newRole) {
+                        console.error('Selected role does not exist.');
+                        return;
+                    }
+                    const newRoleID = newRole.id;
+
+                    const updateQuery = 'UPDATE employee SET role_id = ? WHERE first_name = ? AND last_name = ?';
+                    const params = [newRoleID, firstName, lastName];
+
+                    connection.query(updateQuery, params, (err) => {
+                        if (err) {
+                            console.error(err);
+                            return;
+                        }
+
+                        console.log(`Employee "${firstName} ${lastName}" role updated successfully to "${newRoleName}".`);
+                        startApp();
+                    });
+                });
+        });
+    });
+}
 
   function addRole() {
     // Fetch department names from the database
