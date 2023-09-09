@@ -29,8 +29,10 @@ function startApp() {
             'View All Employees',
             'Add Employee',
             'Update Employee Role',
+            'Delete Employee',
             'View All Roles',
             'Add Role',
+            'View Department Budget',
             'View All Departments',
             'Add Department',
             'Quit', 
@@ -56,6 +58,9 @@ function startApp() {
           case 'Update Employee Role':
             updateEmployee();
             break;
+          case 'Delete Employee':
+            deleteEmployee();
+            break;
           case 'View All Roles':
             connection.query('SELECT * FROM roles', function (err, results) {
                 if (err) {
@@ -69,6 +74,9 @@ function startApp() {
             break;
           case 'Add Role':
             addRole();
+            break;
+          case 'View Department Budget':
+            viewDepartmentBudget();
             break;
           case 'View All Departments':
             connection.query('SELECT * FROM department', function (err, results) {
@@ -251,6 +259,49 @@ function updateEmployee() {
                     });
                 });
         });
+    });
+}
+
+function deleteEmployee() {
+    // Fetch all employees from the database
+    const employeesQuery = 'SELECT id, first_name, last_name FROM employee';
+
+    connection.query(employeesQuery, (err, employeesResults) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        const employeeChoices = employeesResults.map((result) => `${result.first_name} ${result.last_name}`);
+
+        inquirer
+            .prompt([
+                {
+                    type: 'list',
+                    name: 'employeeChoice',
+                    message: 'Select an employee to remove from database:',
+                    choices: employeeChoices,
+                },
+            ])
+            .then((answers) => {
+                const employeeFullName = answers.employeeChoice;
+                const [firstName, lastName] = employeeFullName.split(' ');
+
+                // Delete the selected employee
+                const deleteQuery = 'DELETE FROM employee WHERE first_name = ? AND last_name = ?';
+                const params = [firstName, lastName];
+
+                // Execute the delete query
+                connection.query(deleteQuery, params, (err) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+
+                    console.log(`Employee "${firstName} ${lastName}" has been deleted.`);
+                    startApp();
+                });
+            });
     });
 }
 
