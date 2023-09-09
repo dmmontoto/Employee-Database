@@ -370,6 +370,51 @@ function deleteEmployee() {
     });
 }
 
+function viewDepartmentBudget() {
+    // Fetch department names from the database
+    const departmentQuery = 'SELECT id, department_name FROM department';
+
+    connection.query(departmentQuery, (err, departmentResults) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        const departmentChoices = departmentResults.map((result) => ({
+            name: result.department_name,
+            value: result.id,
+        }));
+
+        inquirer
+            .prompt([
+                {
+                    type: 'list',
+                    name: 'departmentChoice',
+                    message: 'Select a department to view the budget:',
+                    choices: departmentChoices,
+                },
+            ])
+            .then((answers) => {
+                const selectedDepartmentId = answers.departmentChoice;
+
+                // Query to calculate the total salary budget for the selected department
+                const budgetQuery = 'SELECT SUM(salary) AS total_budget FROM roles WHERE department_id = ?';
+
+                connection.query(budgetQuery, [selectedDepartmentId], (err, budgetResult) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+
+                    const totalBudget = budgetResult[0].total_budget || 0;
+
+                    console.log(`The total utilized budget for the selected department is $${totalBudget}.`);
+                    startApp();
+                });
+            });
+    });
+}
+
 function addDepartment() {
     inquirer
     .prompt([
