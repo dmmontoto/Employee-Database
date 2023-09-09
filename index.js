@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
-const { viewAllEmployees } = require('./db/queries');
+// const { viewAllEmployees } = require('./db/queries');
 
 // Create a connection to the MySQL database
 const connection = mysql.createConnection({
@@ -95,32 +95,98 @@ function startApp() {
   }
 
   function addEmployee() {
-    inquirer
-    .prompt([
-        {
-            type: 'input',
-            name: 'firstName',
-            message: 'What is the employee`s first name?'
-        },
-        {
-            type: 'input',
-            name: 'lastName',
-            message: 'What is the employee`s last name?'
-        },
-        {
-            type: 'list',
-            name: 'roleChoice',
-            message: 'What is the employee`s role?',
-            choices: , 
-        },
-        {
-            type: 'list',
-            name: 'managerChoice',
-            message: 'Who is the employee`s manager?',
-            choices: , 
-        },
-    ])
-  }
+    // Fetch roles from the database and populate roleChoices
+    const rolesQuery = 'SELECT id, title FROM roles';
+
+    connection.query(rolesQuery, (err, rolesResults) => {
+        if (err) {
+            console.error(err);
+            return;
+        }
+
+        const roleChoices = rolesResults.map((result) => result.title);
+
+        // Fetch managers from the database and populate managerChoices
+        const managersQuery = 'SELECT id, first_name, last_name FROM employee';
+
+        connection.query(managersQuery, (err, managersResults) => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+
+            const managerChoices = managersResults.map((result) => `${result.first_name} ${result.last_name}`);
+
+            inquirer
+                .prompt([
+                    {
+                        type: 'input',
+                        name: 'firstName',
+                        message: 'What is the employee`s first name?',
+                    },
+                    {
+                        type: 'input',
+                        name: 'lastName',
+                        message: 'What is the employee`s last name?',
+                    },
+                    {
+                        type: 'list',
+                        name: 'roleChoice',
+                        message: 'What is the employee`s role?',
+                        choices: roleChoices, 
+                    },
+                    {
+                        type: 'list',
+                        name: 'managerChoice',
+                        message: 'Who is the employee`s manager?',
+                        choices: managerChoices, 
+                    },
+                ])
+                .then((answers) => {
+                    const employeeFirstName = answers.firstName;
+                    const employeeLastName = answers.lastName;
+                    const employeeRoleName = answers.roleChoice; 
+
+                    // Find the corresponding role_id based on the selected role name
+                    const employeeRole = rolesResults.find((role) => role.title === employeeRoleName);
+
+                    if (!employeeRole) {
+                        console.error('Selected role does not exist.');
+                        return;
+                    }
+
+                    const roleID = employeeRole.id;
+
+                    const employeeManagerName = answers.managerChoice;
+
+                    // Find the corresponding manager_id based on the selected manager name
+                    const employeeManager = managersResults.find((manager) =>
+                        `${manager.first_name} ${manager.last_name}` === employeeManagerName);
+
+                    if (!employeeManager) {
+                        console.error('Selected manager does not exist.');
+                        return;
+                    }
+
+                    const managerID = employeeManager.id;
+
+                    const insertQuery = 'INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)';
+
+                    connection.query(insertQuery, [employeeFirstName, employeeLastName, roleID, managerID], (err) => {
+                            if (err) {
+                                console.error(err);
+                                return;
+                            }
+
+                            console.log(`Employee "${employeeFirstName} ${employeeLastName}" added successfully.`);
+                            startApp();
+                        }
+                    );
+                });
+        });
+    });
+}
+
 
   function addRole() {
     // Fetch department names from the database
@@ -226,7 +292,3 @@ function addDepartment() {
         });
     });
 }
-
-module.exports = {
-    connection,
-};
