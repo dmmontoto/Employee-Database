@@ -30,6 +30,8 @@ After this setup, the user will need to change directories into the `db` folder 
 
 Once completed, the user will then be able to do `npm start` and begin navigating the newly-created employee database.
 
+[Tutorial](https://watch.screencastify.com/v/xSogs9P4Az1uhCkN2Cuf)
+
 ## Credits
 
 David Montoto
